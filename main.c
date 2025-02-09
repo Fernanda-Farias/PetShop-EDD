@@ -18,6 +18,7 @@ typedef struct {
     int topo;
 } PilhaOut;
 
+//declaracao das filas/pilhas/listas
 PilhaOut pilhaOut;
 Animal* inicioAguardando = NULL;
 Animal* inicioEmAndamento = NULL;
@@ -25,21 +26,36 @@ Animal* inicioEntregueOuCancel = NULL;
 Animal* inicioFinalizado = NULL;
 Animal* todosAnimais = NULL;
 
+//declaracao de variaveis globais (contadores)
 int contId = 0;
 int contEmAndamento = 0;
 
-// limpar o buffer
+//limpa o buffer de entrada
 void entradaDados(char* dado, size_t tamanhoDado) {
     if (fgets(dado, tamanhoDado, stdin)) {
-        dado[strcspn(dado, "\n")] = '\0'; // Remove o '\n'
+        dado[strcspn(dado, "\n")] = '\0';
     }
 }
 
-// inserindo os dados na fila
+//verifica se todos os animais estao na lista de todos os animais
+void verificarTodosAnimais(Animal* animal) {
+    Animal* aux = todosAnimais;
+    while (aux != NULL && aux->id != animal->id) {
+        aux = aux->proximo;
+    }
+
+    if (aux == NULL) {
+        //adiciona o animal se não estiver na lista
+        animal->proximo = todosAnimais;
+        todosAnimais = animal;
+    }
+}
+
+//insere os dados do animal cadastrado
 Animal* inserirDados(char* nome, char* tutor, int servico) {
     Animal* novoAnimal = malloc(sizeof(Animal));
     if (!novoAnimal) {
-        printf("Erro! Nao foi possivel alocar memoria!\n");
+        printf("Erro! Nao foi possivel alocar memoria.\n");
         return NULL;
     }
 
@@ -49,7 +65,7 @@ Animal* inserirDados(char* nome, char* tutor, int servico) {
     strcpy(novoAnimal->status, "Aguardando");
     novoAnimal->proximo = NULL;
 
-    // Definir o serviço
+    //definir o servico pelo numero que o usuario selecionou
     if (servico == 1) {
         strcpy(novoAnimal->servico, "Banho");
     } else if (servico == 2) {
@@ -57,12 +73,12 @@ Animal* inserirDados(char* nome, char* tutor, int servico) {
     } else if (servico == 3) {
         strcpy(novoAnimal->servico, "Banho e Tosa");
     } else {
-        printf("Servico invalido! Animal nao cadastrado.\n");
+        printf("\nServico invalido! Animal nao cadastrado.");
         free(novoAnimal);
         return NULL;
     }
 
-    // Adicionar na fila de aguardando
+    //adiciona o animal na fila de animais aguardando atendimento
     if (inicioAguardando == NULL) {
         inicioAguardando = novoAnimal;
     } else {
@@ -73,21 +89,12 @@ Animal* inserirDados(char* nome, char* tutor, int servico) {
         aux->proximo = novoAnimal;
     }
 
-    // Adicionar na lista de todos os animais
-    if (todosAnimais == NULL) {
-        todosAnimais = novoAnimal;
-    } else {
-        Animal* aux = todosAnimais;
-        while (aux->proximo != NULL) {
-            aux = aux->proximo;
-        }
-        aux->proximo = novoAnimal;
-    }
-    printf("Animal cadastrado!\n");
+    verificarTodosAnimais(novoAnimal);
+    printf("\nAnimal cadastrado!");
     return novoAnimal;
 }
 
-// cadastro do animal
+//cadastra o animal (recebe os dados do usuario)
 void cadastrarAnimal() {
     char nome[100], tutor[100];
     int servico;
@@ -103,15 +110,18 @@ void cadastrarAnimal() {
 
     inserirDados(nome, tutor, servico);
 }
+
 //iniciar pilha
 void iniciarPilhaOut(PilhaOut *p) {
     p->topo = -1;
 }
+
 //verificar pilha de saída cheia: 1 cheia(50) e 0 <= size_max
 //int pra retornar um valor 
 int lotouPilhaOut (PilhaOut *p) {
     return p->topo == SIZE_MAX -1;
 }
+
 //empilhar animal
 void pushPilhaOut(PilhaOut *p, Animal* animal) {
     if (lotouPilhaOut(p)) {
@@ -121,26 +131,27 @@ void pushPilhaOut(PilhaOut *p, Animal* animal) {
     p->itens[++(p->topo)] = animal;
 }
 
-// procurar um animal pelo Id
+//procura um animal pelo Id
 Animal* procurarAnimal() {
     Animal* animalProcurado = todosAnimais;
     int id;
 
-    printf("Informe o Id do animal: ");
+    printf("\nInforme o Id do animal: ");
     scanf("%d", &id);
+    getchar();
 
     while (animalProcurado) {
         if (animalProcurado->id == id) {
-            printf("Dados do animal: \nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s", animalProcurado->id, animalProcurado->nome, animalProcurado->tutor, animalProcurado->servico, animalProcurado->status);
+            printf("\nDados do animal: \nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s", animalProcurado->id, animalProcurado->nome, animalProcurado->tutor, animalProcurado->servico, animalProcurado->status);
             return animalProcurado;
         }
         animalProcurado = animalProcurado->proximo;
     }
-    printf("O animal não foi encontrado!\n");
+    printf("\nO animal nao foi encontrado!");
     return NULL;
 }
 
-// funcao p remover um animal de uma lista especifica
+//remove um animal de uma lista especifica pra alocar ele pra nova lista (operacao realizada quando o animal muda de status para outro)
 void removerAnimalDaLista(Animal** lista, int id) {
     Animal* atual = *lista;
     Animal* anterior = NULL;
@@ -152,7 +163,6 @@ void removerAnimalDaLista(Animal** lista, int id) {
             } else {
                 anterior->proximo = atual->proximo;
             }
-            free(atual);
             return;
         }
         anterior = atual;
@@ -160,19 +170,24 @@ void removerAnimalDaLista(Animal** lista, int id) {
     }
 }
 
-// Funcao p add um animal na nova lista quando ele muda o status
+//adiciona um animal na nova lista quando ele muda o status
 void addAnimalNoDestino(Animal* animal, char novoStatus[15], Animal** localDestino){
     Animal* novoAnimal = malloc(sizeof(Animal));
+
     if (!novoAnimal) {
-        printf("Erro ao alocar memoria!\n");
+        printf("\nErro ao alocar memoria!");
         return;
     }
 
-    *novoAnimal = *animal;
+    //recebe os dados do animal
+    novoAnimal->id = animal->id;
+    strcpy(novoAnimal->nome, animal->nome);
+    strcpy(novoAnimal->tutor, animal->tutor);
+    strcpy(novoAnimal->servico, animal->servico);
     strcpy(novoAnimal->status, novoStatus);
     novoAnimal->proximo = NULL;
 
-    // Adicionar na lista de destino
+    //adiciona na lista de destino
     if (*localDestino == NULL) {
         *localDestino = novoAnimal;
     } else {
@@ -182,25 +197,25 @@ void addAnimalNoDestino(Animal* animal, char novoStatus[15], Animal** localDesti
         }
         aux->proximo = novoAnimal;
     }
-    printf("Animal com Id %d movido para '%s'.\n", animal->id, novoStatus);
+    printf("\nAnimal com Id %d movido para '%s'.", animal->id, novoStatus);
 }
 
-// Mover o primeiro animal da fila de aguardando p em andamento
+//move o primeiro animal da fila de "Aguardando" para a fila de "Em Andamento"
 void moverAnimalAguardando() {
     if (inicioAguardando == NULL) {
-        printf("Nao ha animais aguardando atendimento.\n");
+        printf("\nNao ha animais aguardando atendimento.");
         return;
     }
     if (contEmAndamento >= 3) {
-        printf("Nao foi possivel adicionar um animal em andamento, pois ja ha 3 animais na fila.\n");
+        printf("\nNao foi possivel adicionar um animal em andamento, pois ja tem 3 animais na fila.");
         return;
     }
 
-    // Pegar o primeiro animal da fila de aguardando
+    //pega o primeiro animal da fila de "Aguardando"
     Animal* animal = inicioAguardando;
-    inicioAguardando = inicioAguardando->proximo; // Atualizar o início da fila
+    inicioAguardando = inicioAguardando->proximo; //atualiza a fila apos a remocao
 
-    // Adicionar na lista de "Em andamento"
+    //adiciona na lista de "Em andamento"
     strcpy(animal->status, "Em andamento");
     animal->proximo = NULL;
 
@@ -215,10 +230,16 @@ void moverAnimalAguardando() {
     }
 
     contEmAndamento++;
-    printf("Animal com Id %d está com atendimentio em andamento.\n", animal->id);
+    printf("\nAnimal com Id %d esta com atendimento em andamento.", animal->id);
 }
 
-// Mover um animal escolhido pelo usuario (lista) p ser finalizado
+//mover um animal escolhido pelo usuario para ser finalizado.
+/*
+ *Um animal atendido primeiro pode realizar um servico de banho e tosa, e o animal seguinte realiza um servico so de banho.
+ * Como 3 animais podem estar em andamento ao mesmo tempo, pode ocorrer de o segundo animal terminar primeiro que o primeiro animal,
+ * pois o servico dele era menor. Nesse caso, o atendimento finalizado não tem ordem, é o que acabar primeiro. Portanto, o usuario
+ * (possivelmente a pessoa que estava executando o servico), é quem informa o animal que ela finalizou para ir para a pilha de entrega
+ */
 void moverAnimalEmAndamento() {
     Animal* animal = procurarAnimal();
 
@@ -227,64 +248,67 @@ void moverAnimalEmAndamento() {
         return;
     }
 
-    // Mover pra lista de finalizados
+    //move para a lista de "Finalizados"
     strcpy(animal->status, "Finalizado");
     addAnimalNoDestino(animal, "Finalizado", &inicioFinalizado);
 
-    // Remover da lista de andamento
+    //remove da lista de "Em Andamento"
     removerAnimalDaLista(&inicioEmAndamento, animal->id);
     contEmAndamento--;
-    printf("Atendimento do animal com ID %d finalizado.\n", animal->id);
+    verificarTodosAnimais(animal);
+    printf("\nAtendimento do animal com Id %d finalizado.", animal->id);
 }
 
-// Função p exibir uma lista/fila especifica
+//exibe uma lista/fila especifica
 void exibirAnimaisLocal(Animal* destino) {
     if (destino == NULL) {
         printf("Nenhum animal nesta lista.\n");
         return;
     }
-    while (destino != NULL) {
-        printf("Id: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", destino->id, destino->nome, destino->tutor, destino->servico, destino->status);
-        destino = destino->proximo;
+
+    Animal* aux = destino;
+    while (aux != NULL) {
+        printf("Id: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", aux->id, aux->nome, aux->tutor, aux->servico, aux->status);
+        aux = aux->proximo;
     }
 }
 
-// cancelar servico se tiver aguardando
+//cancela o servico apenas se o status for "Aguardando"
 void cancelarServico() {
     Animal* animalCancelar = procurarAnimal();
-    
-    if (animalCancelar == NULL){
-        printf("O animal nao foi encontrado.\n");
-        return;
-    }
 
     if (strcmp(animalCancelar->status, "Aguardando") == 0) {
-        removerAnimalDaLista(inicioAguardando, animalCancelar->id);
-        printf("Animal de id %d excluido com sucesso!", animalCancelar->id);
-    } else if (strcmp(animalCancelar->status, "Finalizado")!= 0) {
-        printf("Erro ao remover o animal, pois ele não está mais aguardando atendimento.");
+        removerAnimalDaLista(&inicioAguardando, animalCancelar->id);
+        strcpy(animalCancelar->status, "Cancelado");
+        addAnimalNoDestino(animalCancelar, "Cancelado", &inicioEntregueOuCancel);
+        printf("\nAnimal de id %d excluido com sucesso!", animalCancelar->id);
     } else {
-        printf("Erro ao remover animal!");
+        printf("\nErro ao remover o animal, pois ele nao esta mais aguardando atendimento.");
     }
 }
 
-// exibir todos os animais que passaram no sistema
+//exibe todos os animais que passaram pelo sistema
 void exibirTodosAnimais() {
     printf("---Exibindo todos os animais---");
-    Animal* bichos = todosAnimais; //auxiliar sem repetir o aux pra lista n sumir
-    while (bichos != NULL) {
-        printf("\nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", bichos->id, bichos->nome, bichos->tutor, bichos->servico, bichos->status);
-        bichos = bichos->proximo;
+    Animal* animais = todosAnimais;
+
+    while (animais != NULL) {
+        printf("\nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", animais->id, animais->nome, animais->tutor, animais->servico, animais->status);
+        animais = animais->proximo;
     }
 }
 
-// atualizar algum dado do animal. não botei o id pq ner, vai bagunçar meu progresso
+//atualiza algum dado do animal, de acordo com a necessidade do usuario (não atualiza id porque vira bagunça)
 void atualizarDadoAnimal() {
     Animal* animalAlterar = procurarAnimal();
     int escolha;
     char nomeOuTutor[100];
 
-    printf("Qual dado você deseja alterar do animal?");
+    if (animalAlterar == NULL) {
+        return;
+    }
+
+    printf("\nQual dado voce deseja alterar do animal?");
     printf("\n1- Nome \n2- Tutor \n3- Servico \n4- Status \nOpcao: ");
     scanf("%d", &escolha);
     getchar();
@@ -302,11 +326,23 @@ void atualizarDadoAnimal() {
         break;
         case 3:
             if (strcmp(animalAlterar->status, "Aguardando") == 0) {
-                moverAnimalAguardando();
-            } else if (strcmp(animalAlterar->status, "Aguardando") != 0) {
-                printf("Não foi possivel alterar o servico, pois o animal não está mais aguardando o atendimento.");
+                int novoServico;
+                printf("\nQual novo servico voce deseja realizar:");
+                printf("\n1- Banho | 2- Tosa | 3- Banho e tosa: ");
+                scanf("%d", &novoServico);
+                getchar();
+
+                if (novoServico == 1) {
+                    strcpy(animalAlterar->servico, "Banho");
+                } else if (novoServico == 2) {
+                    strcpy(animalAlterar->servico, "Tosa");
+                } else if (novoServico == 3) {
+                    strcpy(animalAlterar->servico, "Banho e Tosa");
+                } else {
+                    printf("\nServico invalido!");
+                }
             } else {
-                printf("Erro ao alterar servico!");
+                printf("\nNao foi possivel alterar o servico, pois o animal não esta mais aguardando o atendimento.");
             }
         break;
         case 4:
@@ -318,6 +354,9 @@ void atualizarDadoAnimal() {
                 printf("Erro ao alterar status!");
             }
         break;
+        default:
+            printf("Opcao Invalida!");
+        break;
     }
 }
 
@@ -325,14 +364,17 @@ int main() {
     int escolha, opcao;
     iniciarPilhaOut(&pilhaOut);
     //APÓS FAZER A PILHA E A LISTA DE ANIMAIS CANCELADOS E ENTREGUES, REVER O CODIGO, POIS ALGUNS ITENS PRECISAM QUE ADICIONE A PILHA E LISTA
-    //Que eu lembre: rever o exibirAnimaisLocal, pra ver se tbm roda cm pilha; cancelarServico p add servicos cancelados na lista de cancelados e entregues;
-    //rever o atualizar dado animal, pra adicionar a possibilidade dos outros status; rever o if e else q tem na main
-    //amanhã vou verificar duas coisas q tao dando errado: a lista de todos os animais, pq os animais tão sumindo, e o atualizardados, pq ele ta quebrando
+    //Que eu lembre: rever o exibirAnimaisLocal, pra ver se tbm roda cm pilha;
+    //rever o atualizarDadoAnimal, pra adicionar a possibilidade de sair do em andamento pra pilha de finalizado, e da pilha de finalizado pra fila de entregues e cancelados;
+    //rever o caso 3 da main, pra adicionar opcao == 3 a pilha de finalizado
+    //atualizar as opcoes da main
+    //desalocar memoria quando o programa for encerrado
+    //testei o codigo, ate entao tudo certo
 
-    printf("----- Seja Bem-vindo(a) ao Pet Shop Mundo Cão!-----");
+    printf("----- Seja Bem vindo(a) ao Pet Shop Mundo Cao!-----");
     do {
         printf("\nSelecione a opcao desejada:");
-        printf(" \n1- Cadastrar Animal \n2- Procurar animal \n3- Visualizar animais por status \n4- Exibir todos os Animais \n5- Chamar animal p/atendimento");
+        printf(" \n1- Cadastrar Animal \n2- Pesquisar animal \n3- Visualizar animais por status \n4- Exibir todos os Animais \n5- Chamar animal p/atendimento");
         printf("\n6- Cancelar servico \n7- Atualizar dado do animal \n8- Finalizar servico  \n20- Sair \nOpcao: ");
         scanf("%d", &escolha);
         getchar();
@@ -345,7 +387,7 @@ int main() {
                 procurarAnimal();
             break;
             case 3:
-                printf("Qual status você quer visualizar os animais: ");
+                printf("Qual status voce quer visualizar os animais: ");
                 printf("\n1- Aguardando \n2- Em andamento \n3- Finalizado \n4- Cancelado/Entregue");
                 printf("\nOpcao: ");
                 scanf("%d", &opcao);
@@ -356,9 +398,9 @@ int main() {
                 } else if (opcao == 2) {
                     exibirAnimaisLocal(inicioEmAndamento);
                 } else if (opcao == 3) {
-                    printf("pendente");
+                    printf("pendente"); //pilha pendente aqui
                 } else if (opcao == 4) {
-                    printf("pendente");
+                    exibirAnimaisLocal(inicioEntregueOuCancel);
                 } else {
                     printf("Opcao Invalida!");
                 }
@@ -379,7 +421,7 @@ int main() {
                 moverAnimalEmAndamento();
             break;
             case 20:
-                printf("Aff veyr que sono");
+                printf("Saindo do sistema...");
             break;
             default:
                 printf("Opção inválida");

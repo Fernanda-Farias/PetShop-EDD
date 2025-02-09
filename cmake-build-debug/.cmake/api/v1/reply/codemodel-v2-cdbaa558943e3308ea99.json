@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "C:/Prova_EDD_3/cmake-build-debug",
-		"source" : "C:/Prova_EDD_3"
+		"build" : "C:/Prova_EDD_3/PetShop-EDD/cmake-build-debug",
+		"source" : "C:/Prova_EDD_3/PetShop-EDD"
 	},
 	"version" : 
 	{
