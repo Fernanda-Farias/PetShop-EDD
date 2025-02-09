@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#define SIZE_MAX 50 //tamanho max da pilha de saída
 typedef struct Animal {
     int id;
     char nome[100];
@@ -11,6 +12,13 @@ typedef struct Animal {
     struct Animal* proximo;
 } Animal;
 
+//saída tipo pilha
+typedef struct {
+    Animal* itens[SIZE_MAX];
+    int topo;
+} PilhaOut;
+
+PilhaOut pilhaOut;
 Animal* inicioAguardando = NULL;
 Animal* inicioEmAndamento = NULL;
 Animal* inicioEntregueOuCancel = NULL;
@@ -31,7 +39,7 @@ void entradaDados(char* dado, size_t tamanhoDado) {
 Animal* inserirDados(char* nome, char* tutor, int servico) {
     Animal* novoAnimal = malloc(sizeof(Animal));
     if (!novoAnimal) {
-        printf("Erro: nao foi possivel alocar memoria!\n");
+        printf("Erro! Nao foi possivel alocar memoria!\n");
         return NULL;
     }
 
@@ -76,6 +84,7 @@ Animal* inserirDados(char* nome, char* tutor, int servico) {
         aux->proximo = novoAnimal;
     }
     printf("Animal cadastrado!\n");
+    return novoAnimal;
 }
 
 // cadastro do animal
@@ -93,6 +102,23 @@ void cadastrarAnimal() {
     getchar();
 
     inserirDados(nome, tutor, servico);
+}
+//iniciar pilha
+void iniciarPilhaOut(PilhaOut *p) {
+    p->topo = -1;
+}
+//verificar pilha de saída cheia: 1 cheia(50) e 0 <= size_max
+//int pra retornar um valor 
+int lotouPilhaOut (PilhaOut *p) {
+    return p->topo == SIZE_MAX -1;
+}
+//empilhar animal
+void pushPilhaOut(PilhaOut *p, Animal* animal) {
+    if (lotouPilhaOut(p)) {
+        printf("Erro! A pilha de saida dos animais esta cheia!\n");
+        return;
+    }
+    p->itens[++(p->topo)] = animal;
 }
 
 // procurar um animal pelo Id
@@ -156,7 +182,6 @@ void addAnimalNoDestino(Animal* animal, char novoStatus[15], Animal** localDesti
         }
         aux->proximo = novoAnimal;
     }
-
     printf("Animal com Id %d movido para '%s'.\n", animal->id, novoStatus);
 }
 
@@ -195,7 +220,6 @@ void moverAnimalAguardando() {
 
 // Mover um animal escolhido pelo usuario (lista) p ser finalizado
 void moverAnimalEmAndamento() {
-
     Animal* animal = procurarAnimal();
 
     if (animal == NULL || strcmp(animal->status, "Em andamento") != 0) {
@@ -228,24 +252,29 @@ void exibirAnimaisLocal(Animal* destino) {
 // cancelar servico se tiver aguardando
 void cancelarServico() {
     Animal* animalCancelar = procurarAnimal();
+    
+    if (animalCancelar == NULL){
+        printf("O animal nao foi encontrado.\n");
+        return;
+    }
 
     if (strcmp(animalCancelar->status, "Aguardando") == 0) {
         removerAnimalDaLista(inicioAguardando, animalCancelar->id);
         printf("Animal de id %d excluido com sucesso!", animalCancelar->id);
-    } else if (strcpy(animalCancelar->status, "Finalizado")!= 0) {
+    } else if (strcmp(animalCancelar->status, "Finalizado")!= 0) {
         printf("Erro ao remover o animal, pois ele não está mais aguardando atendimento.");
     } else {
         printf("Erro ao remover animal!");
     }
-
 }
 
 // exibir todos os animais que passaram no sistema
 void exibirTodosAnimais() {
     printf("---Exibindo todos os animais---");
-    while (todosAnimais != NULL) {
-        printf("\nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", todosAnimais->id, todosAnimais->nome, todosAnimais->tutor, todosAnimais->servico, todosAnimais->status);
-        todosAnimais = todosAnimais->proximo;
+    Animal* bichos = todosAnimais; //auxiliar sem repetir o aux pra lista n sumir
+    while (bichos != NULL) {
+        printf("\nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", bichos->id, bichos->nome, bichos->tutor, bichos->servico, bichos->status);
+        bichos = bichos->proximo;
     }
 }
 
@@ -294,6 +323,7 @@ void atualizarDadoAnimal() {
 
 int main() {
     int escolha, opcao;
+    iniciarPilhaOut(&pilhaOut);
     //APÓS FAZER A PILHA E A LISTA DE ANIMAIS CANCELADOS E ENTREGUES, REVER O CODIGO, POIS ALGUNS ITENS PRECISAM QUE ADICIONE A PILHA E LISTA
     //Que eu lembre: rever o exibirAnimaisLocal, pra ver se tbm roda cm pilha; cancelarServico p add servicos cancelados na lista de cancelados e entregues;
     //rever o atualizar dado animal, pra adicionar a possibilidade dos outros status; rever o if e else q tem na main
