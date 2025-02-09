@@ -1,4 +1,5 @@
 //Fernanda Oliveira de Farias e Giovanna Costa Oliveira
+//Favor testar com carinho
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -190,7 +191,6 @@ void removerAnimalDaLista(Animal** lista, int id) {
             } else {
                 anterior->proximo = atual->proximo;
             }
-            free(atual);
             return;
         }
         anterior = atual;
@@ -242,10 +242,10 @@ void moverAnimalAguardando() {
 //pega o primeiro animal da fila de "Aguardando"
     Animal* animal = inicioAguardando;
     inicioAguardando = inicioAguardando->proximo; //atualiza a fila apos a remocao
-    animal->proximo = NULL; 
 
 //adiciona na lista de "Em andamento"
     strcpy(animal->status, "Em andamento");
+    animal->proximo = NULL; 
 
     if (inicioEmAndamento == NULL) {
         inicioEmAndamento = animal;
@@ -260,13 +260,14 @@ void moverAnimalAguardando() {
     contEmAndamento++;
     printf("\nAnimal com Id %d esta com atendimento em andamento.", animal->id);
 }
+
 /*
  *Um animal atendido primeiro pode realizar um servico de banho e tosa, e o animal seguinte realiza um servico so de banho.
  * Como 3 animais podem estar em andamento ao mesmo tempo, pode ocorrer de o segundo animal terminar primeiro que o primeiro animal,
  * pois o servico dele era menor. Nesse caso, o atendimento finalizado não tem ordem, é o que acabar primeiro. Portanto, o usuario
  * (possivelmente a pessoa que estava executando o servico), é quem informa o animal que ela finalizou para ir para a pilha de entrega
  */
-void moverAnimalEmAndamento() {
+ void moverAnimalEmAndamento() {
     Animal* animal = procurarAnimal();
 
     if (animal == NULL || strcmp(animal->status, "Em andamento") != 0) {
@@ -394,7 +395,9 @@ void atualizarDadoAnimal() {
                 moverAnimalAguardando();
             } else if (strcmp(animalAlterar->status, "Em andamento") == 0) {
                 moverAnimalEmAndamento();
-            } else {
+            } else if (strcmp(animalAlterar->status, "Finalizado") == 0) {
+                entregarPets();
+            }else {
                 printf("Erro ao alterar status!");
             }
         break;
@@ -403,6 +406,7 @@ void atualizarDadoAnimal() {
         break;
     }
 }
+
 // Entrega com no minimo 3 animais, usando pilha
 void entregarPets() {
     int minimo = pilhaOut.topo + 1;
@@ -416,18 +420,8 @@ void entregarPets() {
         strcpy(animalEntregue->status,"Entregue");
         addAnimalNoDestino(animalEntregue, "Entregue", &inicioEntregueOuCancel);
         removerAnimalDaLista(&inicioFinalizado, animalEntregue->id);
-        printf("O animal %s, com ID %d foi entregue\n", animalEntregue->nome, animalEntregue->id);
+        printf("O animal %s, com Id %d foi entregue\n", animalEntregue->nome, animalEntregue->id);
     }    
-}
-
-// exibir todos os animais entregues ou cancelados
-void exibirEntregueOuCancel() {
-    printf("---Exibindo os animais Entregues OU Cancelados---\n");
-    Animal* pet = inicioEntregueOuCancel; //auxiliar sem repetir o aux pra lista nao sumir
-    while (pet != NULL) {
-        printf("\nId: %d, Nome: %s, Tutor: %s, Servico: %s, Status: %s\n", pet->id, pet->nome, pet->tutor, pet->servico, pet->status);
-        pet = pet->proximo;
-    }  
 }
 
 int main() {
@@ -438,7 +432,7 @@ int main() {
     do {
         printf("\nSelecione a opcao desejada:");
         printf(" \n1- Cadastrar Animal \n2- Pesquisar animal \n3- Visualizar animais por status \n4- Exibir todos os Animais \n5- Chamar animal p/atendimento");
-        printf("\n6- Cancelar servico \n7- Atualizar dado do animal \n8- Finalizar servico \n9- Entregar animais \n10- Exibir animais Entregues ou Cancelados \n20- Sair \nOpcao: ");
+        printf("\n6- Cancelar servico \n7- Atualizar dado do animal \n8- Finalizar servico \n9- Entregar animais \n10- Sair \nOpcao: ");
         scanf("%d", &escolha);
         getchar();
 
@@ -487,9 +481,6 @@ int main() {
                 entregarPets();
             break;
             case 10:
-                exibirEntregueOuCancel();
-            break;
-            case 20:
                 liberar_memoria(inicioAguardando);
                 liberar_memoria(inicioEmAndamento);
                 liberar_memoria(inicioEntregueOuCancel);
@@ -502,7 +493,7 @@ int main() {
             break;
 
         }
-    } while (escolha != 20);
+    } while (escolha != 10);
 
     return 0;
 }
